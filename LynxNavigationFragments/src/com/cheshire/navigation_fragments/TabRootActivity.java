@@ -1,7 +1,7 @@
 package com.cheshire.navigation_fragments;
 
 import java.util.ArrayList;
-import lynx.misc.ChickenDictionary;
+
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.ActionBar.TabListener;
@@ -14,15 +14,9 @@ import android.view.MenuItem;
 //Created by Stephen Lynx
 public class TabRootActivity extends Activity implements TabListener, ControllerFragmentListener
 {
-	public static final String TAB_LABEL = "tabLabel";
-	public static final String TAB_ROOT_FRAGMENT = "tabRootfragment";
-	public static final String TAB_ICON_ID = "tabIconId";
-	public static final String TAB_DEFAULT_TRANSITION ="tabDefaultTransition";
-
-	private static final String TAB_FRAGMENT = "tabFragment";
 	private NavigationControllerFragment currentFragment;
 	private ArrayList <Tab> tabs;
-	private ArrayList<ChickenDictionary> fragmentInformations;
+	private ArrayList<TabInformation> fragmentInformations;
 
 	public TabRootActivity()
 	{
@@ -34,7 +28,7 @@ public class TabRootActivity extends Activity implements TabListener, Controller
 
 	}
 
-	public void setTabInformations(ArrayList<ChickenDictionary> newInformations)
+	public void setTabInformations(ArrayList<TabInformation> newInformations)
 	{
 		fragmentInformations = newInformations;
 	}	
@@ -48,7 +42,7 @@ public class TabRootActivity extends Activity implements TabListener, Controller
 
 	public void onTabUnselected(Tab tab, FragmentTransaction ft)
 	{
-		Fragment mFragment = (Fragment) fragmentInformations.get(tabs.indexOf(tab)).valueForKey(TAB_FRAGMENT);
+		Fragment mFragment = fragmentInformations.get(tabs.indexOf(tab)).fragment;
 
 		if (mFragment != null)
 		{
@@ -87,21 +81,6 @@ public class TabRootActivity extends Activity implements TabListener, Controller
 			getActionBar().setDisplayHomeAsUpEnabled(false);
 		}
 	}
-	
-	public static ChickenDictionary makeTabInformation(String label, NavigationFragment rootFragment, Integer iconId, Integer defaultTransition)
-	{
-		ChickenDictionary info = new ChickenDictionary();
-
-		info.setValueForKey(label, TAB_LABEL);
-
-		info.setValueForKey(rootFragment, TAB_ROOT_FRAGMENT);
-
-		info.setValueForKey(iconId, TAB_ICON_ID);
-
-		info.setValueForKey(defaultTransition, TAB_DEFAULT_TRANSITION);
-
-		return info;
-	}
 
 	protected void onCreate(Bundle savedInstanceState)
 	{
@@ -117,20 +96,20 @@ public class TabRootActivity extends Activity implements TabListener, Controller
 		{
 			System.out.println("Tab list null or empty at the creation of the tabs.");
 			
-			fragmentInformations = new ArrayList<ChickenDictionary>();
+			fragmentInformations = new ArrayList<TabInformation>();
 			
-			fragmentInformations.add(makeTabInformation("Null list of tabs", null, null, null));
+			fragmentInformations.add(new TabInformation("Null list of tabs", null, null, null));
 		}
 
-		for (ChickenDictionary tabInfo: fragmentInformations) 
+		for (TabInformation tabInfo: fragmentInformations) 
 		{
 			Tab newTab = bar.newTab();
 
-			newTab.setText((CharSequence) tabInfo.valueForKey(TAB_LABEL));
+			newTab.setText((CharSequence) tabInfo.label);
 
-			if (tabInfo.valueForKey(TAB_ICON_ID)!= null)
+			if (tabInfo.iconId != null)
 			{
-				newTab.setIcon((Integer) tabInfo.valueForKey(TAB_ICON_ID));
+				newTab.setIcon((Integer) tabInfo.iconId);
 			}
 
 			newTab.setTabListener(this);
@@ -139,7 +118,7 @@ public class TabRootActivity extends Activity implements TabListener, Controller
 
 			Fragment temp = getFragmentManager().findFragmentByTag(Integer.toString(fragmentInformations.indexOf(tabInfo)));
 
-			tabInfo.setValueForKey(temp, TAB_FRAGMENT);
+			tabInfo.fragment = temp;
 
 			if (temp != null && !temp.isDetached())
 			{
@@ -161,7 +140,7 @@ public class TabRootActivity extends Activity implements TabListener, Controller
 
 	public void onTabSelected(Tab tab, FragmentTransaction ft) 
 	{
-		currentFragment = (NavigationControllerFragment) fragmentInformations.get(tabs.indexOf(tab)).valueForKey(TAB_FRAGMENT);
+		currentFragment = (NavigationControllerFragment) fragmentInformations.get(tabs.indexOf(tab)).fragment;
 
 		if (currentFragment == null)
 		{
@@ -169,28 +148,28 @@ public class TabRootActivity extends Activity implements TabListener, Controller
 
 			currentFragment.setListener(this);
 			
-			if (fragmentInformations.get(tabs.indexOf(tab)).valueForKey(TAB_DEFAULT_TRANSITION)!=null)
+			if (fragmentInformations.get(tabs.indexOf(tab)).defaultTransition!=null)
 			{
-				currentFragment.setTransitionMode((Integer) fragmentInformations.get(tabs.indexOf(tab)).valueForKey(TAB_DEFAULT_TRANSITION));
+				currentFragment.setTransitionMode((Integer) fragmentInformations.get(tabs.indexOf(tab)).defaultTransition);
 			}
 			else
 			{
 				currentFragment.setTransitionMode(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);				
 			}
 
-			Object desiredRootFragment = fragmentInformations.get(tabs.indexOf(tab)).valueForKey(TAB_ROOT_FRAGMENT);
+			Object desiredRootFragment = fragmentInformations.get(tabs.indexOf(tab)).rootFragment;
 
 			if (desiredRootFragment == null || !NavigationFragment.class.isAssignableFrom(desiredRootFragment.getClass()))
 			{
-				System.out.println("Tried to use a root fragment that didnt inherited from TabFragment for tab with name "+ fragmentInformations.get(tabs.indexOf(tab)).valueForKey(TAB_LABEL)+".");
+				System.out.println("Tried to use a root fragment that didnt inherited from TabFragment for tab with name "+ fragmentInformations.get(tabs.indexOf(tab)).label+".");
 				currentFragment.setRootFragment(new NavigationFragment());
 			}
 			else
 			{
-				currentFragment.setRootFragment((NavigationFragment) fragmentInformations.get(tabs.indexOf(tab)).valueForKey(TAB_ROOT_FRAGMENT));
+				currentFragment.setRootFragment((NavigationFragment) fragmentInformations.get(tabs.indexOf(tab)).rootFragment);
 			}
 
-			fragmentInformations.get(tabs.indexOf(tab)).setValueForKey(currentFragment, TAB_FRAGMENT);
+			fragmentInformations.get(tabs.indexOf(tab)).fragment = currentFragment;;
 
 			ft.add(android.R.id.content, currentFragment, Integer.toString(tabs.indexOf(tab)));
 		} 
