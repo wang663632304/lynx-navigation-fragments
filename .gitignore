@@ -1,0 +1,4 @@
+LynxTools\bin
+
+*.cache
+*.class
